@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from tqdm import tqdm
 import requests
+import time
 
 # Array of URLs to download
 urls = [
@@ -21,6 +22,7 @@ class DownloadThread(threading.Thread):
         super().__init__()
         self.url = url
         self.file_path = file_path
+        self.downloaded_size = 0
         self.total_size = 0
         self.downloaded_size = 0
 
@@ -34,10 +36,11 @@ class DownloadThread(threading.Thread):
             with tqdm(total=self.total_size, unit='B', unit_scale=True, desc=os.path.basename(self.file_path)) as progress_bar:
                 for data in response.iter_content(chunk_size=1024):
                     file.write(data)
+                    self.downloaded_size += len(data)
                     progress_bar.update(len(data))
-                    self.downloaded_size = len(data)
-        
 
+        
+    
 
 class DownloaderApp:
     """
@@ -78,12 +81,19 @@ class DownloaderApp:
         while any(thread.is_alive() for thread in threads):
             tot_size = sum(thread.total_size for thread in threads if hasattr(thread, 'total_size'))
             downloaded_size = sum(thread.downloaded_size for thread in threads if hasattr(thread, 'downloaded_size'))
-            progress = downloaded_size / tot_size * 100 if tot_size > 0 else 0
-            self.progress_bar['value'] += progress
+            # progress = downloaded_size / tot_size * 100 if tot_size > 0 else 0
+            progress = (downloaded_size/tot_size) * 100 if tot_size > 0 else 0
+            
+            self.progress_bar['value'] += progress/100
+            print(f"{tot_size} compare {downloaded_size}")
+
             self.master.update()
+
+
         # Wait for the threads to finish
         for thread in threads:
             thread.join()
+
 
         # Show a message box when the downloads are complete
         messagebox.showinfo("Download Complete", "The files have been downloaded successfully!")

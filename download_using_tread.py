@@ -3,6 +3,14 @@ import threading
 from tqdm import tqdm
 
 
+
+urls = [
+    'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4',
+    'https://download.samplelib.com/mp4/sample-5s.mp4',
+    'https://download.samplelib.com/mp4/sample-10s.mp4',
+]
+
+
 def downloadFile(url,file_name):
     file = requests.get(url, stream=True)
     total_size = int(file.headers.get('content-length', 0))
@@ -21,20 +29,14 @@ def downloadFile(url,file_name):
     return url
 
 
-
-
-urls = [
-    'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4',
-    'https://download.samplelib.com/mp4/sample-5s.mp4',
-    'https://download.samplelib.com/mp4/sample-10s.mp4',
-]
-
-
 threads = []
 for url in urls:
     file_name = url.rsplit('/', 1)[1]
     t = threading.Thread(target=downloadFile,args=(url,file_name))
-    t.start()
+    threads.append(t)
+
+for thread in threads:
+    thread.start()
 
 
 

@@ -4,13 +4,16 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from tqdm import tqdm
 import requests
-import time
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+import ssl
 
 # Array of URLs to download
 urls = [
     'http://thinkingform.com/video-sample-mp4',
-    'https://file-examples.com/storage/fe0b804ac5640668798b8d0/2017/04/file_example_MP4_480_1_5MG.mp4',
-    'https://file-examples.com/wp-content/uploads/2017/04/file_example_MP4_640_3MG.mp4',
+    'https://jsoncompare.org/LearningContainer/SampleFiles/Video/MP4/sample-mp4-file.mp4',
+    'https://filesamples.com/formats/mp4/samples/video/mp4/sample_960x540.mp4',
 ]
 
 class DownloadThread(threading.Thread):
@@ -22,9 +25,10 @@ class DownloadThread(threading.Thread):
         super().__init__()
         self.url = url
         self.file_path = file_path
-        self.downloaded_size = 0
         self.total_size = 0
         self.downloaded_size = 0
+        # self.receiver_email = receiver_email
+        
 
     def run(self):
         # Download the file
@@ -39,12 +43,31 @@ class DownloadThread(threading.Thread):
                     self.downloaded_size += len(data)
                     progress_bar.update(len(data))
 
-        
+    #         self.send_email()
     
+    # def send_email(self):
+    #     message = MIMEMultipart()
+    #     message['Subject'] = 'Downloaded File'
+    #     message['From'] = 'tenzinchemi50@gmail.com'
+    #     message['To'] = self.receiver_email
+
+    #     with open(self.file_path,'rb') as file:
+    #         attachment = MIMEApplication(file.read(),_subtype = 'mp4')
+    #         attachment.add_header('Content-Disposition', 'attachment', filename=os.path.basename(self.file_path))
+    #         message.attach(attachment)
+
+    #     context = ssl.create_default_context()
+
+    #     with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context ) as smtp:
+    #         smtp.login('tenzinchemi50@gmail.com', '...')
+    #         smtp.sendmail('tenzinchemi50@gmail.com', self.receiver_email, message.as_string())
+
+    #     print('Email sent successfully.')
+   
 
 class DownloaderApp:
     """
-    A class that represents a GUI application for downloading the files.
+    A class that represents a GUI application for downloading the files. Send an email with file attachment
     """
 
     def __init__(self, master):
@@ -61,6 +84,25 @@ class DownloaderApp:
         self.cancel_button = tk.Button(master, text="Cancel", command=self.cancel)
         self.cancel_button.pack(pady=10)
 
+        # self.email_label = tk.Label(master, text="Enter your email address:")
+        # self.email_label.pack(pady=10)
+
+        # self.entry=tk.Entry(master)
+        # self.entry.pack(pady=10)
+  
+        # self.submit_button = tk.Button(master, text="Send Email")
+        # self.submit_button.pack(pady=10)
+
+         # Create entry fields for receiver email
+        self.receiver_email_label = tk.Label(master, text="To Email:")
+        self.receiver_email_label.pack(pady=5)
+        self.receiver_email_entry = tk.Entry(master)
+        self.receiver_email_entry.pack(pady=5)
+        self.send_email_button = tk.Button(master, text="Send Email", command=self.send_email)
+        self.send_email_button.pack(pady=10)
+        
+        self.all_files = []
+
         # Download the files
         self.download_files()
 
@@ -71,7 +113,9 @@ class DownloaderApp:
             file_name = os.path.basename(url)
             file_path = os.path.join(os.getcwd(), file_name)
             thread = DownloadThread(url, file_path)
+            self.all_files.append(thread)
             threads.append(thread)
+
 
         # Start the threads
         for thread in threads:
@@ -81,12 +125,10 @@ class DownloaderApp:
         while any(thread.is_alive() for thread in threads):
             tot_size = sum(thread.total_size for thread in threads if hasattr(thread, 'total_size'))
             downloaded_size = sum(thread.downloaded_size for thread in threads if hasattr(thread, 'downloaded_size'))
-            # progress = downloaded_size / tot_size * 100 if tot_size > 0 else 0
-            progress = (downloaded_size/tot_size) * 100 if tot_size > 0 else 0
-            
-            self.progress_bar['value'] += progress/100
-            print(f"{tot_size} compare {downloaded_size}")
-
+            progress = (downloaded_size/tot_size)*100  if tot_size > 0 else 0
+            self.progress_bar['value'] = progress
+            # print(f"{tot_size}  - {downloaded_size}")
+            # print(self.progress_bar["value"])
             self.master.update()
 
 
@@ -97,6 +139,36 @@ class DownloaderApp:
 
         # Show a message box when the downloads are complete
         messagebox.showinfo("Download Complete", "The files have been downloaded successfully!")
+
+    def send_email(self):
+        # Get the receiver email address from the entry field
+        receiver_email = self.receiver_email_entry.get()
+
+        # Create a thread to send the email
+        thread = threading.Thread(target=self._send_email, args=(receiver_email,))
+        thread.start()
+
+    def _send_email(self, receiver_email):
+        # Create the message object
+        message = MIMEMultipart()
+        message['Subject'] = 'Downloaded File'
+        message['From'] = 'tenzinchemi50@gmail.com'
+        message['To'] = receiver_email
+
+        # Attach the downloaded file to the message
+        for files in self.all_files:
+            with open(files, 'rb') as file:
+                attachment = MIMEApplication(file.read(), _subtype='mp4')
+                attachment.add_header('Content-Disposition', 'attachment', filename=os.path.basename(files))
+                message.attach(attachment)
+
+        # Send the email
+        context = ssl.create_default_context()
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
+            smtp.login('tenzinchemi50@gmail.com', '...')
+            smtp.sendmail('tenzinchemi50@gmail.com', receiver_email, message.as_string())
+        print('Email sent successfully.')
+    
 
     def cancel(self):
         # Terminate all the threads

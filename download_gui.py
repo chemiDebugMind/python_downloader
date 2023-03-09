@@ -136,7 +136,7 @@ class DownloaderApp:
         # Send the email
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
-            smtp.login('tenzinchemi50@gmail.com', 'xolefunnoxgdisfb')
+            smtp.login('tenzinchemi50@gmail.com', '....')
             smtp.sendmail('tenzinchemi50@gmail.com', receiver_email, message.as_string())
         print('Email sent successfully.')
     

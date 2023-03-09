@@ -43,26 +43,6 @@ class DownloadThread(threading.Thread):
                     self.downloaded_size += len(data)
                     progress_bar.update(len(data))
 
-    #         self.send_email()
-    
-    # def send_email(self):
-    #     message = MIMEMultipart()
-    #     message['Subject'] = 'Downloaded File'
-    #     message['From'] = 'tenzinchemi50@gmail.com'
-    #     message['To'] = self.receiver_email
-
-    #     with open(self.file_path,'rb') as file:
-    #         attachment = MIMEApplication(file.read(),_subtype = 'mp4')
-    #         attachment.add_header('Content-Disposition', 'attachment', filename=os.path.basename(self.file_path))
-    #         message.attach(attachment)
-
-    #     context = ssl.create_default_context()
-
-    #     with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context ) as smtp:
-    #         smtp.login('tenzinchemi50@gmail.com', '...')
-    #         smtp.sendmail('tenzinchemi50@gmail.com', self.receiver_email, message.as_string())
-
-    #     print('Email sent successfully.')
    
 
 class DownloaderApp:
@@ -84,15 +64,6 @@ class DownloaderApp:
         self.cancel_button = tk.Button(master, text="Cancel", command=self.cancel)
         self.cancel_button.pack(pady=10)
 
-        # self.email_label = tk.Label(master, text="Enter your email address:")
-        # self.email_label.pack(pady=10)
-
-        # self.entry=tk.Entry(master)
-        # self.entry.pack(pady=10)
-  
-        # self.submit_button = tk.Button(master, text="Send Email")
-        # self.submit_button.pack(pady=10)
-
          # Create entry fields for receiver email
         self.receiver_email_label = tk.Label(master, text="To Email:")
         self.receiver_email_label.pack(pady=5)
@@ -113,7 +84,7 @@ class DownloaderApp:
             file_name = os.path.basename(url)
             file_path = os.path.join(os.getcwd(), file_name)
             thread = DownloadThread(url, file_path)
-            self.all_files.append(thread)
+            self.all_files.append(file_path)
             threads.append(thread)
 
 
@@ -136,7 +107,6 @@ class DownloaderApp:
         for thread in threads:
             thread.join()
 
-
         # Show a message box when the downloads are complete
         messagebox.showinfo("Download Complete", "The files have been downloaded successfully!")
 
@@ -148,7 +118,7 @@ class DownloaderApp:
         thread = threading.Thread(target=self._send_email, args=(receiver_email,))
         thread.start()
 
-    def _send_email(self, receiver_email):
+    def _send_email(self,receiver_email):
         # Create the message object
         message = MIMEMultipart()
         message['Subject'] = 'Downloaded File'
@@ -158,6 +128,7 @@ class DownloaderApp:
         # Attach the downloaded file to the message
         for files in self.all_files:
             with open(files, 'rb') as file:
+                
                 attachment = MIMEApplication(file.read(), _subtype='mp4')
                 attachment.add_header('Content-Disposition', 'attachment', filename=os.path.basename(files))
                 message.attach(attachment)
@@ -165,7 +136,7 @@ class DownloaderApp:
         # Send the email
         context = ssl.create_default_context()
         with smtplib.SMTP_SSL('smtp.gmail.com', 465, context=context) as smtp:
-            smtp.login('tenzinchemi50@gmail.com', '...')
+            smtp.login('tenzinchemi50@gmail.com', 'xolefunnoxgdisfb')
             smtp.sendmail('tenzinchemi50@gmail.com', receiver_email, message.as_string())
         print('Email sent successfully.')
     
